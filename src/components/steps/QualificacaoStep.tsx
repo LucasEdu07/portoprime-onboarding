@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -140,9 +141,9 @@ export function QualificacaoStep() {
 
       <div className="flex items-center gap-3">
         <Button variant="outline" asChild type="button">
-          <a href="/onboarding/cadastro">
+          <Link href="/onboarding/cadastro">
             <ArrowLeft className="h-4 w-4" aria-hidden /> Voltar
-          </a>
+          </Link>
         </Button>
         <Button type="submit" disabled={submitting} className="flex-1" size="lg">
           {submitting ? "Salvando..." : "Revisar e enviar"}

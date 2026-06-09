@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, ArrowLeft, Check } from "lucide-react";
 import { MODALIDADES } from "@/lib/consts";
@@ -120,9 +121,9 @@ export function ResultadoStep() {
 
       <div className="flex items-center gap-3">
         <Button variant="outline" asChild>
-          <a href="/onboarding/simulacao">
+          <Link href="/onboarding/simulacao">
             <ArrowLeft className="h-4 w-4" aria-hidden /> Ajustar
-          </a>
+          </Link>
         </Button>
         <Button onClick={continuar} disabled={submitting} className="flex-1" size="lg">
           {submitting ? "Salvando..." : "Quero este plano"}
