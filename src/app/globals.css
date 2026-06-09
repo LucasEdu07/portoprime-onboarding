@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+/* ----------------------------------------------------------------------------
+   Tokens da marca Porto / Porto Bank
+   (expostos como utilitários Tailwind v4: bg-porto, text-prime, border-soft...)
+---------------------------------------------------------------------------- */
+@theme {
+  --color-porto: #00428c; /* Azul Porto — primária */
+  --color-porto-digital: #0080c6; /* Azul Digital — hover/links */
+  --color-porto-deep: #002b5c; /* Azul Profundo — footer/active */
+  --color-success: #009634; /* Verde Sucesso */
+  --color-prime: #e9b245; /* Dourado Prime — acento premium */
+  --color-alert: #d60019; /* Vermelho Porto — destaque com parcimônia */
+
+  --color-ink: #1a1f2b; /* Texto */
+  --color-canvas: #f4f6f9; /* Fundo */
+  --color-soft: #d7dce3; /* Bordas */
+
+  --font-heading: var(--font-montserrat), system-ui, sans-serif;
+  --font-body: var(--font-inter), system-ui, sans-serif;
+
+  --radius-pill: 9999px;
+}
+
+* {
+  border-color: var(--color-soft);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-heading);
+}
+
+/* Foco acessível e visível em toda a navegação por teclado. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-porto-digital);
+  outline-offset: 2px;
+}
