@@ -56,7 +56,7 @@ export const cadastroSchema = z.object({
   consentUsoContato: z
     .boolean()
     .refine((v) => v === true, "É necessário aceitar o uso dos dados para contato."),
-  consentMarketing: z.boolean().default(false),
+  consentMarketing: z.boolean(),
 });
 
 export const qualificacaoSchema = z.object({
