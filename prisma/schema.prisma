@@ -1,0 +1,137 @@
+// Porto Prime Consórcios — modelo de dados do MVP de onboarding.
+//
+// PORTABILIDADE: usamos `String` (validados por zod no app) no lugar de enums nativos
+// e `Decimal` para dinheiro. Para migrar de SQLite -> Postgres/Neon na fase 2, basta
+// trocar `provider = "postgresql"` e setar DATABASE_URL; o schema não muda.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// Lead = a entidade central do funil. Criado já na Etapa 1 (Simulação),
+/// antes de qualquer PII, para que abandonos virem leads recuperáveis.
+model Lead {
+  id          String   @id @default(cuid())
+  status      String   @default("DRAFT") // DRAFT | SUBMITTED
+  currentStep String   @default("simulacao") // slug da última etapa concluída
+  protocolo   String?  @unique // gerado no submit: PP-AAAAMMDD-XXXX
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  simulacao     Simulacao?
+  cadastro      Cadastro?
+  qualificacao  Qualificacao?
+  documentos    Documento[]
+  consentimentos ConsentimentoLGPD[]
+  eventos       EventoFunil[]
+  crmSync       CrmSyncRecord[]
+
+  @@index([status, createdAt])
+}
+
+/// Resultado da estimativa de simulação + plano escolhido (Etapas 1 e 2).
+model Simulacao {
+  id              String   @id @default(cuid())
+  leadId          String   @unique
+  lead            Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  modalidade      String // IMOVEL | AUTO | TERRENO | PESADOS
+  valorCarta      Decimal
+  prazoMeses      Int
+  redutor         Boolean  @default(false)
+  parcelaCheia    Decimal
+  parcelaReduzida Decimal?
+  taxaAdmPct      Decimal
+  fundoReservaPct Decimal
+  planoEscolhido  String? // id do plano escolhido na Etapa 2
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+/// Dados de contato do lead (Etapa 3). 1:1 com Lead.
+model Cadastro {
+  id        String   @id @default(cuid())
+  leadId    String   @unique
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  nome      String
+  email     String
+  telefone  String
+  cpf       String?
+  cidade    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Qualificação comercial (Etapa 4). 1:1 com Lead.
+model Qualificacao {
+  id          String   @id @default(cuid())
+  leadId      String   @unique
+  lead        Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  faixaRenda  String
+  ocupacao    String
+  intencao    String // uso pretendido da carta
+  prazoCompra String // horizonte de compra
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+/// Documentos enviados (Etapa 4). Guardamos só metadados/URL — nunca o binário.
+model Documento {
+  id          String   @id @default(cuid())
+  leadId      String
+  lead        Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  tipo        String
+  nomeArquivo String
+  url         String? // URL assinada do Vercel Blob (null no modo metadados)
+  hash        String?
+  tamanho     Int
+  mime        String
+  createdAt   DateTime @default(now())
+
+  @@index([leadId])
+}
+
+/// Registro de consentimento LGPD — append-only (nunca atualizamos, só inserimos).
+model ConsentimentoLGPD {
+  id          String   @id @default(cuid())
+  leadId      String
+  lead        Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  tipo        String // USO_CONTATO | MARKETING | DOCUMENTOS
+  aceito      Boolean
+  versaoTermo String
+  ip          String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  @@index([leadId])
+}
+
+/// Timeline do funil — cada etapa concluída / evento relevante.
+model EventoFunil {
+  id        String   @id @default(cuid())
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  tipo      String
+  meta      String? // JSON serializado
+  createdAt DateTime @default(now())
+
+  @@index([leadId])
+}
+
+/// SCAFFOLD FASE 2 (inativo): outbox/ledger para sync idempotente com o CRM.
+model CrmSyncRecord {
+  id        String   @id @default(cuid())
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  status    String   @default("PENDING") // PENDING | SENT | FAILED
+  payload   String // JSON serializado do snapshot enviado
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+}
