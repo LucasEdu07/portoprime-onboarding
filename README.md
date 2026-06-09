@@ -2,7 +2,7 @@
 
 MVP de **onboarding de leads de consórcio** para a **Porto Prime Consórcios** — representante autorizado **Porto Bank** (consórcio de imóveis, automóveis, terrenos e caminhões; São José dos Campos/SP).
 
-> **Status:** plano travado · implementação iniciando. O planejamento detalhado e a execução milestone a milestone estão sendo conduzidos via sessão remota (`/ultraplan` · Claude Code na web).
+> **Status:** MVP implementado (M0→M4). Wizard de 5 etapas funcional com backend leve persistente, listagem de leads para demo e API REST interna pronta para acoplar ao CRM na fase 2.
 
 ---
 
@@ -89,3 +89,46 @@ Consentimento granular e separado (uso/contato obrigatório vs marketing opciona
 
 ### Fora do MVP (fase 2)
 Motor de simulação real Porto Bank · push automático para CRM (RD Station/HubSpot/Pipedrive/Kommo) + worker de outbox + webhooks assinados · KYC/biometria · painel admin + auth robusta · app do vendedor · API pública versionada.
+
+---
+
+## 🚀 Rodando localmente
+
+```bash
+npm install
+cp .env.example .env          # ajuste se necessário
+npx prisma migrate dev        # cria o banco SQLite (prisma/dev.db)
+npm run dev                   # http://localhost:3000
+```
+
+Páginas: `/` (landing) · `/onboarding/simulacao` (início do wizard) · `/admin/leads` (listagem da demo, aberta) · `/obrigado` (pós-envio).
+Inspecione os dados com `npm run db:studio`.
+
+## ⚙️ Variáveis de ambiente
+
+| Variável | Obrigatória | Função |
+|----------|:-----------:|--------|
+| `DATABASE_URL` | sim | Conexão do banco. SQLite por padrão (`file:./dev.db`). |
+| `BLOB_READ_WRITE_TOKEN` | não | Liga uploads reais no Vercel Blob. Sem ela, a app entra em **modo metadados** (grava nome/tamanho/hash, sem o binário). |
+| `NEXT_PUBLIC_WHATSAPP_NUMBER` | não | Número do CTA do WhatsApp (placeholder até o número real). |
+
+## 🔌 API REST interna
+
+Handlers finos (validação zod na borda) sobre o serviço isolado `src/lib/leads-repo.ts` — o ponto de plug do CRM na fase 2.
+
+```
+POST  /api/leads                # cria Lead DRAFT a partir da simulação (201)
+GET   /api/leads                # lista (demo, aberta)
+GET   /api/leads/[id]           # retoma rascunho (404 se não existe)
+PATCH /api/leads/[id]           # salva uma etapa: body { step, data } (409 se já enviado)
+POST  /api/leads/[id]/submit    # finaliza -> SUBMITTED + protocolo (idempotente)
+POST  /api/uploads              # multipart { leadId, tipo, file } -> Blob ou metadados
+```
+
+## ☁️ Deploy na Vercel
+
+1. Importe o repositório na Vercel (Framework: Next.js — detectado automaticamente).
+2. Defina as variáveis de ambiente acima.
+3. O `build` roda `prisma generate && next build`.
+
+> **SQLite × produção:** no serverless da Vercel o filesystem é efêmero/read-only, então o SQLite **não persiste** entre requests. Para persistência real, troque o `provider` no `prisma/schema.prisma` para `postgresql`, aponte `DATABASE_URL` para um banco Neon (free) e rode `prisma migrate deploy`. O schema é portável — nenhuma outra mudança é necessária.

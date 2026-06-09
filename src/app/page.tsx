@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, Home, Car, Trees, Truck, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Footer } from "@/components/Footer";
+import { TrustBadges } from "@/components/TrustBadges";
 
 const modalidades = [
   { icon: Home, label: "Imóvel" },
@@ -75,6 +76,10 @@ export default function HomePage() {
               </li>
             ))}
           </ul>
+
+          <div className="mt-9">
+            <TrustBadges />
+          </div>
         </section>
       </main>
 
