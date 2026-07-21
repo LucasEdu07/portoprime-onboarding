@@ -10,7 +10,9 @@ import { isValidCPF, onlyDigits } from "@/lib/format";
 // Schemas compartilhados client (react-hook-form) e server (route handlers).
 // Validação na borda da API = contrato REST autossuficiente desde o dia 1.
 
-export const modalidadeEnum = z.enum(["IMOVEL", "AUTO", "TERRENO", "PESADOS"]);
+export const modalidadeEnum = z.enum(["IMOVEL", "AUTO", "TERRENO", "PESADOS"], {
+  error: "Selecione uma modalidade.",
+});
 
 export const simulacaoSchema = z
   .object({
@@ -60,10 +62,10 @@ export const cadastroSchema = z.object({
 });
 
 export const qualificacaoSchema = z.object({
-  faixaRenda: z.enum(FAIXAS_RENDA),
-  ocupacao: z.enum(OCUPACOES),
+  faixaRenda: z.enum(FAIXAS_RENDA, { error: "Selecione a faixa de renda." }),
+  ocupacao: z.enum(OCUPACOES, { error: "Selecione a ocupação." }),
   intencao: z.string().trim().min(3, "Conte rapidamente sua intenção."),
-  prazoCompra: z.enum(PRAZOS_COMPRA),
+  prazoCompra: z.enum(PRAZOS_COMPRA, { error: "Selecione o prazo de compra." }),
 });
 
 export const confirmacaoSchema = z.object({

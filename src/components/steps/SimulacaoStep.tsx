@@ -74,13 +74,31 @@ export function SimulacaoStep() {
       redutor: Boolean(data.redutor),
     };
     try {
-      const res = await fetch("/api/leads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) throw new Error("falha");
-      const { id } = await res.json();
+      let id = store.leadId;
+      // Reusa o rascunho em andamento (atualiza a simulação) em vez de criar um novo lead
+      // a cada passada pela Etapa 1 — evita rascunhos duplicados no funil.
+      if (id) {
+        const upd = await fetch(`/api/leads/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ step: "simulacao", data: payload }),
+        });
+        // Rascunho sumiu (404) ou já finalizado (409) → começa um lead novo.
+        if (upd.status === 404 || upd.status === 409) id = null;
+        else if (!upd.ok) throw new Error("falha");
+      }
+      if (!id) {
+        const res = await fetch("/api/leads", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error("falha");
+        id = (await res.json()).id as string;
+        // Lead NOVO: zera o cache do fluxo anterior (plano/cadastro/qualificação/docs/
+        // protocolo) para não vazar dados de um lead antigo no novo funil.
+        store.reset();
+      }
       store.setLeadId(id);
       store.setSimulacao(payload);
       router.push("/onboarding/resultado");

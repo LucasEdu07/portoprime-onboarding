@@ -3,8 +3,22 @@ import { listLeads } from "@/lib/leads-repo";
 import { MODALIDADES, type ModalidadeId } from "@/lib/consts";
 import { formatBRL } from "@/lib/format";
 
-// Mini-listagem de leads para a demo (aberta no MVP — proteger na fase 2).
+// Mini-listagem de leads para a demo. Protegida por Basic Auth via middleware.ts;
+// mesmo assim, a listagem mascara PII (telefone/CPF) — o dado cru só aparece sob demanda.
 export const dynamic = "force-dynamic";
+
+/** (**) *****-1234 — mostra só os 4 últimos dígitos do telefone. */
+function maskTelefoneLista(tel: string | null | undefined): string {
+  const d = (tel ?? "").replace(/\D/g, "");
+  if (d.length < 4) return "—";
+  return `(**) *****-${d.slice(-4)}`;
+}
+
+/** ***.***.***-** — CPF totalmente mascarado (existência, não o valor). */
+function maskCPFLista(cpf: string | null | undefined): string | null {
+  const d = (cpf ?? "").replace(/\D/g, "");
+  return d.length === 11 ? "***.***.***-**" : null;
+}
 
 const dataFmt = new Intl.DateTimeFormat("pt-BR", {
   day: "2-digit",
@@ -76,7 +90,10 @@ export default async function AdminLeadsPage() {
                           {lead.cadastro.nome}
                         </span>
                         <span className="block text-xs text-ink/55">
-                          {lead.cadastro.telefone}
+                          {maskTelefoneLista(lead.cadastro.telefone)}
+                          {maskCPFLista(lead.cadastro.cpf) ? (
+                            <span className="ml-2">· CPF {maskCPFLista(lead.cadastro.cpf)}</span>
+                          ) : null}
                         </span>
                       </span>
                     ) : (

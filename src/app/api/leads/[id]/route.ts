@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { stepSchemas } from "@/lib/validators";
+import { stepSchemas, simulacaoSchema } from "@/lib/validators";
 import {
   getLead,
+  updateSimulacao,
   setPlano,
   setCadastro,
   setQualificacao,
@@ -42,8 +43,9 @@ export async function PATCH(
     return NextResponse.json({ error: "JSON inválido." }, { status: 400 });
   }
 
+  // "simulacao" reusa o DRAFT (Etapa 1); as demais etapas usam stepSchemas.
   const step = body.step;
-  if (!step || !(step in stepSchemas)) {
+  if (!step || (step !== "simulacao" && !(step in stepSchemas))) {
     return NextResponse.json({ error: "Etapa inválida." }, { status: 400 });
   }
 
@@ -53,7 +55,8 @@ export async function PATCH(
     return NextResponse.json({ error: "Lead já finalizado." }, { status: 409 });
   }
 
-  const schema = stepSchemas[step as keyof typeof stepSchemas];
+  const schema =
+    step === "simulacao" ? simulacaoSchema : stepSchemas[step as keyof typeof stepSchemas];
   const parsed = schema.safeParse(body.data);
   if (!parsed.success) {
     return NextResponse.json(
@@ -62,7 +65,10 @@ export async function PATCH(
     );
   }
 
-  if (step === "resultado") {
+  if (step === "simulacao") {
+    const d = parsed.data as Parameters<typeof updateSimulacao>[1];
+    await updateSimulacao(id, d);
+  } else if (step === "resultado") {
     const d = parsed.data as { planoEscolhido: string };
     await setPlano(id, d.planoEscolhido);
   } else if (step === "cadastro") {

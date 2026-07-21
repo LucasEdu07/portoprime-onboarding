@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, MessageCircle } from "lucide-react";
-import { useOnboarding } from "@/lib/store";
+import { useOnboarding, useHasHydrated } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Footer } from "@/components/Footer";
@@ -13,13 +13,16 @@ const numero = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "5512999999999";
 
 export default function ObrigadoPage() {
   const router = useRouter();
+  const hydrated = useHasHydrated();
   const { submittedProtocolo, reset } = useOnboarding();
 
   useEffect(() => {
-    if (!submittedProtocolo) router.replace("/");
-  }, [submittedProtocolo, router]);
+    // Espera a reidratação: sem isto, um F5 nesta página não acha o protocolo (ainda não
+    // lido do localStorage) e redireciona para a home antes de mostrar a confirmação.
+    if (hydrated && !submittedProtocolo) router.replace("/");
+  }, [hydrated, submittedProtocolo, router]);
 
-  if (!submittedProtocolo) return null;
+  if (!hydrated || !submittedProtocolo) return null;
 
   const waHref = `https://wa.me/${numero}?text=${encodeURIComponent(
     `Olá! Acabei de enviar meu interesse. Protocolo ${submittedProtocolo}.`,

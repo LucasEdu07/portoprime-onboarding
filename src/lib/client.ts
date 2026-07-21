@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useOnboarding } from "@/lib/store";
+import { useOnboarding, useHasHydrated } from "@/lib/store";
 
 /** PATCH de uma etapa no backend (verdade dos dados). Lança em erro. */
 export async function patchStep(leadId: string, step: string, data: unknown) {
@@ -39,9 +39,12 @@ export async function submitLead(leadId: string, data: unknown): Promise<string>
  */
 export function useRequireLead(): string | null {
   const router = useRouter();
+  const hydrated = useHasHydrated();
   const { leadId, simulacao } = useOnboarding();
   useEffect(() => {
-    if (!leadId || !simulacao) router.replace("/onboarding/simulacao");
-  }, [leadId, simulacao, router]);
-  return leadId;
+    // Só redireciona DEPOIS de reidratar — senão um F5 na etapa avançada perde o estado
+    // (ainda não lido do localStorage) e bounce indevido para a Etapa 1.
+    if (hydrated && (!leadId || !simulacao)) router.replace("/onboarding/simulacao");
+  }, [hydrated, leadId, simulacao, router]);
+  return hydrated ? leadId : null;
 }

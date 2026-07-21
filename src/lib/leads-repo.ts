@@ -39,6 +39,29 @@ export async function createLead(input: SimulacaoInput) {
   return lead;
 }
 
+/**
+ * Etapa 1 (reuso) — atualiza a simulação de um DRAFT existente em vez de criar outro lead.
+ * Evita a enxurrada de rascunhos duplicados no funil quando o usuário ajusta o slider e
+ * volta/avança na Etapa 1. Recalcula a estimativa a partir do input (fonte da verdade).
+ */
+export async function updateSimulacao(id: string, input: SimulacaoInput) {
+  const r = calcularSimulacao(input);
+  await prisma.simulacao.update({
+    where: { leadId: id },
+    data: {
+      modalidade: r.modalidade,
+      valorCarta: r.valorCarta,
+      prazoMeses: r.prazoMeses,
+      redutor: r.redutor,
+      parcelaCheia: r.parcelaCheia,
+      parcelaReduzida: r.parcelaReduzida,
+      taxaAdmPct: r.taxaAdmPct,
+      fundoReservaPct: r.fundoReservaPct,
+    },
+  });
+  return touchStep(id, "simulacao", "SIMULACAO_ATUALIZADA", input);
+}
+
 export async function getLead(id: string) {
   return prisma.lead.findUnique({
     where: { id },

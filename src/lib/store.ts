@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { SimulacaoInput } from "@/lib/simulacao";
@@ -70,3 +71,18 @@ export const useOnboarding = create<OnboardingState>()(
     { name: "pp-onboarding" },
   ),
 );
+
+/**
+ * true depois que o zustand/persist terminou de reidratar do localStorage.
+ * Guards de rota (useRequireLead, /obrigado) DEVEM esperar isto antes de redirecionar —
+ * senão o 1º render (estado ainda vazio) manda o usuário de volta à Etapa 1 num simples
+ * F5 nas etapas avançadas ou perde o protocolo na tela de obrigado.
+ */
+export function useHasHydrated(): boolean {
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    setHydrated(useOnboarding.persist.hasHydrated());
+    return useOnboarding.persist.onFinishHydration(() => setHydrated(true));
+  }, []);
+  return hydrated;
+}
